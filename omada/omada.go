@@ -24,10 +24,20 @@ type OmadaMessage struct {
 func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
 	res := OmadaMessage{}
 
+	// It can be helpful to log the incoming JSON data for debugging purposes.
+	// But it's not ideal that it has the 'shardSecret' within, so wipe this
+	// from the string. Also, a []byte is not a string yet.
+	sanitised := string(body)
+	re := regexp.MustCompile(`"shardSecret":"([^"]+)"`)
+	sanitised = re.ReplaceAllString(sanitised, `"shardSecret":"****"`)
+
+	// For now, we'll  always log. May have to make this configurable.
+	log.Printf("Processing incoming message: `%v`", sanitised)
+
 	// Parse the JSON data into the omadaMessage format
 	if err := json.Unmarshal(body, &res); err != nil {
-		log.Printf("Error decoding the message into the omadaMessage format. Error: %v", err)
-		log.Printf("The message was: %v\n", body)
+		log.Printf("Error decoding the message into the OmadaMessage format structure. Error: %v", err)
+		log.Printf("The message was: %v", sanitised)
 		return &res, err
 	}
 
@@ -41,6 +51,7 @@ func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
 		}
 		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", time.Now()))
 		res.Priority = 0
+		log.Println("Message is detected to be an Omada test webhook message, and processed as such")
 	} else {
 		// Convert timestamp to human readable string and append it to the slice of texts as another line of text
 		// as the timestamp is microseconds since the unix epoch, not that well readable.
@@ -51,6 +62,7 @@ func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
 		// messages in the future.
 		res.Priority = 4
 		// TODO: Change Priority level based on the contents of the notification
+		// log.Println("Message is not a test message")
 	}
 
 	return &res, nil

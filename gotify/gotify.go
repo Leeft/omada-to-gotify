@@ -54,7 +54,7 @@ func SendToGotify(gotifyURL, applicationToken string, notification *omada.OmadaM
 		return err
 	}
 
-	log.Println("Message Sent!")
+	log.Println("Message sent to gotify")
 	return nil
 }
 
