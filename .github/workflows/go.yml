@@ -48,8 +48,10 @@ jobs:
         os: ${{ matrix.os }}
 
     - name: Build [linux]
+      id: build_linux
       if: matrix.os == 'linux'
       run: |
+        echo "TAG=$(git describe --tags)" >> "$GITHUB_OUTPUT"
         CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify webhook.go
         tar -I 'gzip -9' -cf omada-to-gotify-$os-amd64.tar.gz omada-to-gotify LICENSE
         rm omada-to-gotify
@@ -115,7 +117,7 @@ jobs:
       uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
       if: github.ref_type == 'tag' && matrix.os == 'linux'
       with:
-        context: ./omada-to-gotify-docker-amd64.tar.gz
+        context: https://github.com/Leeft/omada-to-gotify/releases/download/${{ steps.build_linux.outputs.TAG }}/omada-to-gotify-docker-amd64.tar.gz
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
