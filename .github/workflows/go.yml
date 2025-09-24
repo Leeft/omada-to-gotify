@@ -56,6 +56,22 @@ jobs:
         printf "sha256: %s\n" "$(shasum -a 256 omada-to-gotify-$os-amd64.tar.gz)"
       env:
         os: ${{ matrix.os }}
-        
+
+    - name: Upload Release Assets [windows]
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: omada-to-gotify-${{ matrix.os }}-amd64.zip
+
+    - name: Upload Release Assets [linux]
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'linux'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: omada-to-gotify-${{ matrix.os }}-amd64.tar.gz        
+
 #    - name: Test
 #      run: go test -v ./...

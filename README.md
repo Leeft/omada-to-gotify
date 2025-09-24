@@ -13,14 +13,14 @@ network can talk to it, and it can talk to your Gotify server).
 
 ## Installation / Configuration
 
-This project uses environment variables for configuration. The following environment variables are in use:
+Environment variables are used for configuration. They are:
 
-### Required Variables
+### Required environment variables
 
 - `GOTIFY_URL` - The URL of your Gotify server (e.g., `https://gotify.example.com`)
-- `GOTIFY_APP_TOKEN` - The token for your Gotify application (e.g., `abcdefg1234567890`) as configured inside Gotify
+- `GOTIFY_APP_TOKEN` - The token for your Gotify application as configured inside Gotify
 
-### Optional Variables
+### Optional environment variables
 
 - `PORT` - The port on which to run the server (default is `8080`)
 
@@ -33,14 +33,15 @@ To use this project:
 3. Configure the webhook in Omada to match your environment variables: `http://${GOTIFY_URL}:${PORT}/omadaToGotify`
 4. Wait for a message to come through from your Omada Controller and see it appear in Gotify!
 
-If there are any errors in parsing or delivering, messages will be sent to the console.
+If there are any errors in parsing or delivering, messages will be sent to the console. But unless it failed to start the server should keep running.
 
 ## Future
 
-- Better instructions, maybe a docker compose file or a basic LXC setup script.
+- Better instructions, maybe a Docker and Docker compose file or a basic LXC setup script.
+- Docker image ready to go.
 - Right now this webhook doesn't authenticate the request. Quite simple to add, just not done yet.
 - Specific support for more types of events from the Omada Controller, such as setting a priority based on message contents or doing more to augment the information given.
-- Automated tests. Right now there aren't any tests.
+- Automated tests. Right now there aren't _any_ tests.
 
 ## LICENSE
 
