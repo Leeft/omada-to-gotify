@@ -6,8 +6,8 @@ This is a small program written in Go which spawns a server that'll receive
 webhook messages from a TP-Link Omada Network Controller, it converts them
 into Gotify notifications and delivers them to Gotify.
 
-Run it in Docker, in a LXC, or really anywhere you like (as long as the Omada
-network can talk to it, and it can talk to your Gotify server).
+Run it in Docker, in a LXC, or really anywhere you like (anywhere as long as
+the Omada network can talk to it, and it can talk to your Gotify server).
 
 ![Gotify screenshot with example message](gotify.png)
 
@@ -17,7 +17,7 @@ Environment variables are used for configuration. They are:
 
 ### Required environment variables
 
-- `GOTIFY_URL` - The URL of your Gotify server (e.g., `https://gotify.example.com`)
+- `GOTIFY_URL` - The base URL of your Gotify server (e.g., `https://gotify.example.com`)
 - `GOTIFY_APP_TOKEN` - The token for your Gotify application as configured inside Gotify
 - `OMADA_SHARED_SECRET` - The shared secret configured on the Omada Network Controller for this webhook
 
@@ -29,20 +29,22 @@ Environment variables are used for configuration. They are:
 
 To use this project:
 
-1. Set the required environment variables
-2. Launch the executable
-3. Configure the webhook in Omada to match your environment variables: `http://${GOTIFY_URL}:${PORT}/omadaToGotify`
-4. Wait for a message to come through from your Omada Controller and see it appear in Gotify!
+1. Configure the webhook in Omada using the "Omada format", match the server and port where you are running this program and add the fixed path `/omada-to-gotify`. For example: `http://192.168.12.34:8080/omada-to-gotify`.
+2. Set the required environment variables, making sure to include the shared secret from Omada.
+3. Launch the executable with those environment variables set.
+4. Enable the events to monitor in both the global view and your sites.
+5. Wait for a message to come through from your Omada Controller and see it appear in Gotify.
 
-If there are any errors in parsing or delivering, messages will be sent to the console. But unless it failed to start the server should keep running.
+At the mpment there are no delivery re-tries should delivery fail, but each time it fails to either parse or deliver it will log an error to the console and then try again on the next request.
 
 ## Future
 
 - Better instructions, maybe a Docker and Docker compose file or a basic LXC setup script.
 - Docker image ready to go.
-- Right now this webhook doesn't authenticate the request. Quite simple to add, just not done yet.
 - Specific support for more types of events from the Omada Controller, such as setting a priority based on message contents or doing more to augment the information given.
+- Better code separation to help future automated tests. (It's really not a big project at all, so this is low priority.)
 - Automated tests. Right now there aren't _any_ tests.
+- MacOS support? I've got no way to test it works on MacOS, but I'll take pull requests for it if someone needs that. Then we'll blame you for any problems from then on. :wink:
 
 ## LICENSE
 
