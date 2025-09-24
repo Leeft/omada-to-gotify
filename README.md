@@ -3,8 +3,8 @@
 ## Purpose
 
 This is a small program written in Go which spawns a server that'll receive
-webhook messages from a TP-Link Omada Network Controller, and it converts 
-them into Gotify notifications.
+webhook messages from a TP-Link Omada Network Controller, it converts them
+into Gotify notifications and delivers them to Gotify.
 
 Run it in Docker, in a LXC, or really anywhere you like (as long as the Omada
 network can talk to it, and it can talk to your Gotify server).
@@ -32,6 +32,8 @@ To use this project:
 2. Launch the executable
 3. Configure the webhook in Omada to match your environment variables: `http://${GOTIFY_URL}:${PORT}/omadaToGotify`
 4. Wait for a message to come through from your Omada Controller and see it appear in Gotify!
+
+If there are any errors in parsing or delivering, messages will be sent to the console.
 
 ## Future
 
