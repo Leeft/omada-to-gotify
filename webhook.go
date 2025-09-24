@@ -72,7 +72,7 @@ func main() {
 		port = "8080"
 	}
 
-	http.HandleFunc("/omadaToGotify", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/omada-to-gotify", func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error reading request body: %v", err)
@@ -81,7 +81,6 @@ func main() {
 		}
 		defer r.Body.Close()
 
-		// Forward the webhook to Gotify
 		err = parseAndForwardToGotify(gotifyURL, applicationToken, sharedSecret, body)
 		if err != nil {
 			log.Printf("Error forwarding to Gotify: %v", err)
