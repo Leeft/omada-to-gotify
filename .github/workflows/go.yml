@@ -22,7 +22,7 @@ jobs:
       contents: write
     strategy:
       matrix:
-        os: [linux, windows, docker]
+        os: [linux, windows]
         
     steps:
     
@@ -62,10 +62,8 @@ jobs:
     - name: Build [docker]
       if: matrix.os == 'linux'
       run: |
-        ls -al
         CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify webhook.go
-        ls -al
-        tar -I 'gzip -9' -cvf omada-to-gotify-docker-amd64.tar.gz omada-to-gotify Dockerfile ca-certificates.crt
+        tar -I 'gzip -9' -cf omada-to-gotify-docker-amd64.tar.gz omada-to-gotify Dockerfile ca-certificates.crt
         rm omada-to-gotify
         printf "sha256: %s\n" "$(shasum -a 256 omada-to-gotify-docker-amd64.tar.gz)"
       env:
@@ -96,7 +94,7 @@ jobs:
       with:
         files: omada-to-gotify-docker-amd64.tar.gz        
 
-    # Docker build steps for 'os=docker'
+    # Additional docker build steps for 'os=linux'
 
     - name: Log in to Docker Hub [docker]
       uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
