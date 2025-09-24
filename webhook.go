@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -28,11 +29,12 @@ type WebhookRequest struct {
 //
 // Any fields not mentioned here aren't supported at this time.
 type omadaMessage struct {
-	Site        string   `json:"Site"`
-	Description string   `json:"description"`
-	Text        []string `json:"text"`
-	Controller  string   `json:"Controller"`
-	Timestamp   int64    `json:"timestamp"`
+	Site         string   `json:"Site"`
+	Description  string   `json:"description"`
+	Text         []string `json:"text"`
+	Controller   string   `json:"Controller"`
+	Timestamp    int64    `json:"timestamp"`
+	SharedSecret string   `json:"shardSecret"` // Yeah, nice typo there TP-Link ...
 }
 
 // An actual example JSON message in "Omada format" as received through webhook.site:
@@ -47,6 +49,8 @@ type omadaMessage struct {
 //   "timestamp": 1758579713747
 // }
 
+var ErrForbidden = errors.New("forbidden")
+
 func main() {
 	gotifyURL := os.Getenv("GOTIFY_URL")
 	if gotifyURL == "" {
@@ -56,6 +60,11 @@ func main() {
 	applicationToken := os.Getenv("GOTIFY_APP_TOKEN")
 	if applicationToken == "" {
 		log.Fatal("GOTIFY_APP_TOKEN environment variable is required")
+	}
+
+	sharedSecret := os.Getenv("OMADA_SHARED_SECRET")
+	if sharedSecret == "" {
+		log.Fatal("OMADA_SHARED_SECRET environment variable is required")
 	}
 
 	port := os.Getenv("PORT")
@@ -73,10 +82,17 @@ func main() {
 		defer r.Body.Close()
 
 		// Forward the webhook to Gotify
-		err = forwardToGotify(gotifyURL, applicationToken, body)
+		err = parseAndForwardToGotify(gotifyURL, applicationToken, sharedSecret, body)
 		if err != nil {
 			log.Printf("Error forwarding to Gotify: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+			switch {
+			case errors.Is(err, ErrForbidden):
+				http.Error(w, "Forbidden", http.StatusForbidden)
+			default:
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+
 			return
 		}
 
@@ -88,23 +104,28 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func forwardToGotify(gotifyURL, applicationToken string, body []byte) error {
+func parseAndForwardToGotify(gotifyURL, applicationToken, sharedSecret string, body []byte) error {
 	// Parse the JSON data into the omadaMessage format
 	res := omadaMessage{}
+
 	if err := json.Unmarshal(body, &res); err != nil {
 		log.Printf("Error decoding the message into the omadaMessage format. Error: %v", err)
 		log.Printf("The message was: %v\n", body)
 		return err
 	}
 
-	// Convert timestamp to human readable string and append it to the slice of texts
-	// as another line of text.
+	if res.SharedSecret != sharedSecret {
+		err := ErrForbidden
+		log.Printf("Can't accept webhook request. Error: %v", err)
+		return err
+	}
+
+	// Convert timestamp to human readable string and append it to the slice of texts as another line of text.
 	res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", timestampToHumanReadable(res.Timestamp)))
 
 	return sendToGotify(gotifyURL, applicationToken, res)
 }
 
-// Convert timestamp to human readable string
 func timestampToHumanReadable(timestamp int64) string {
 	seconds := timestamp / 1000
 	return fmt.Sprintf("%v", time.Unix(seconds, 0))

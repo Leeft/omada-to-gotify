@@ -19,6 +19,7 @@ Environment variables are used for configuration. They are:
 
 - `GOTIFY_URL` - The URL of your Gotify server (e.g., `https://gotify.example.com`)
 - `GOTIFY_APP_TOKEN` - The token for your Gotify application as configured inside Gotify
+- `OMADA_SHARED_SECRET` - The shared secret configured on the Omada Network Controller for this webhook
 
 ### Optional environment variables
 
