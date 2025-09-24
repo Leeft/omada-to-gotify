@@ -62,7 +62,7 @@ jobs:
     - name: Build [docker]
       if: matrix.os == 'docker'
       run: |
-        CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify webhook.go
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify webhook.go
         tar -I 'gzip -9' -cf omada-to-gotify-$os-amd64.tar.gz omada-to-gotify Dockerfile ca-certificates.crt
         rm omada-to-gotify
         printf "sha256: %s\n" "$(shasum -a 256 omada-to-gotify-$os-amd64.tar.gz)"
