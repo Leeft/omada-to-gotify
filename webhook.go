@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -29,12 +28,11 @@ type WebhookRequest struct {
 //
 // Any fields not mentioned here aren't supported at this time.
 type omadaMessage struct {
-	Site         string   `json:"Site"`
-	Description  string   `json:"description"`
-	Text         []string `json:"text"`
-	Controller   string   `json:"Controller"`
-	Timestamp    int64    `json:"timestamp"`
-	SharedSecret string   `json:"shardSecret"` // Yeah, nice typo there TP-Link ...
+	Site        string   `json:"Site"`
+	Description string   `json:"description"`
+	Text        []string `json:"text"`
+	Controller  string   `json:"Controller"`
+	Timestamp   int64    `json:"timestamp"`
 }
 
 // An actual example JSON message in "Omada format" as received through webhook.site:
@@ -48,8 +46,6 @@ type omadaMessage struct {
 //   "Controller": "Omada Controller_ZZZZZZ",
 //   "timestamp": 1758579713747
 // }
-
-var ErrForbidden = errors.New("forbidden")
 
 func main() {
 	gotifyURL := os.Getenv("GOTIFY_URL")
@@ -81,41 +77,33 @@ func main() {
 		}
 		defer r.Body.Close()
 
-		err = parseAndForwardToGotify(gotifyURL, applicationToken, sharedSecret, body)
+		if r.Header["Access_token"] == nil || r.Header["Access_token"][0] != sharedSecret {
+			http.Error(w, "Not authorized", http.StatusForbidden)
+			return
+		}
+
+		err = parseAndForwardToGotify(gotifyURL, applicationToken, body)
 		if err != nil {
 			log.Printf("Error forwarding to Gotify: %v", err)
-
-			switch {
-			case errors.Is(err, ErrForbidden):
-				http.Error(w, "Forbidden", http.StatusForbidden)
-			default:
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
-
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "") // or something like: "Webhook forwarded successfully"
+		fmt.Fprintf(w, "") // or something like: "Webhook forwarded successfully" (Omada doesn't care though)
 	})
 
 	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func parseAndForwardToGotify(gotifyURL, applicationToken, sharedSecret string, body []byte) error {
+func parseAndForwardToGotify(gotifyURL, applicationToken string, body []byte) error {
 	// Parse the JSON data into the omadaMessage format
 	res := omadaMessage{}
 
 	if err := json.Unmarshal(body, &res); err != nil {
 		log.Printf("Error decoding the message into the omadaMessage format. Error: %v", err)
 		log.Printf("The message was: %v\n", body)
-		return err
-	}
-
-	if res.SharedSecret != sharedSecret {
-		err := ErrForbidden
-		log.Printf("Can't accept webhook request. Error: %v", err)
 		return err
 	}
 
