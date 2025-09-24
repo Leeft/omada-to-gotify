@@ -72,7 +72,7 @@ func main() {
 		port = "8080"
 	}
 
-	http.HandleFunc("/omada-to-gotify", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error reading request body: %v", err)
