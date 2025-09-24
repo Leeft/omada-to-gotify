@@ -22,7 +22,7 @@ jobs:
       contents: write
     strategy:
       matrix:
-        os: [linux, windows]
+        os: [linux, windows, docker]
         
     steps:
     
@@ -57,6 +57,18 @@ jobs:
       env:
         os: ${{ matrix.os }}
 
+    # The docker build is statically linked for a tiny image, and needs ca-certificates.crt for SSL to work
+    # https://www.cloudbees.com/blog/building-minimal-docker-containers-for-go-applications
+    - name: Build [docker]
+      if: matrix.os == 'docker'
+      run: |
+        CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify webhook.go
+        tar -I 'gzip -9' -cf omada-to-gotify-$os-amd64.tar.gz omada-to-gotify Dockerfile ca-certificates.crt
+        rm omada-to-gotify
+        printf "sha256: %s\n" "$(shasum -a 256 omada-to-gotify-$os-amd64.tar.gz)"
+      env:
+        os: ${{ matrix.os }}
+
     - name: Upload Release Assets [windows]
       uses: softprops/action-gh-release@v2
       if: github.ref_type == 'tag' && matrix.os == 'windows'
@@ -70,8 +82,45 @@ jobs:
       if: github.ref_type == 'tag' && matrix.os == 'linux'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        os: ${{ matrix.os }}
       with:
         files: omada-to-gotify-${{ matrix.os }}-amd64.tar.gz        
 
-#    - name: Test
+    # Docker build steps for 'os=docker'
+
+    - name: Log in to Docker Hub [docker]
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+      if: github.ref_type == 'tag' && matrix.os == 'docker'
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+      if: github.ref_type == 'tag' && matrix.os == 'docker'
+      with:
+        images: shiari/omada-to-gotify
+
+    - name: Build and push Docker image
+      id: push
+      uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+      if: github.ref_type == 'tag' && matrix.os == 'docker'
+      env:
+        os: ${{ matrix.os }}
+      with:
+        context: omada-to-gotify-${{ matrix.os }}-amd64.zip
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Generate artifact attestation
+      uses: actions/attest-build-provenance@v3
+      if: github.ref_type == 'tag' && matrix.os == 'docker'
+      with:
+        subject-name: index.docker.io/shiari/omada-to-gotify
+        subject-digest: ${{ steps.push.outputs.digest }}
+        push-to-registry: true
+
+        #    - name: Test
 #      run: go test -v ./...
