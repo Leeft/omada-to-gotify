@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -107,8 +108,19 @@ func parseAndForwardToGotify(gotifyURL, applicationToken string, body []byte) er
 		return err
 	}
 
-	// Convert timestamp to human readable string and append it to the slice of texts as another line of text.
-	res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", timestampToHumanReadable(res.Timestamp)))
+	// Special handling for the Omada test message which displays very little otherwise
+	match, _ := regexp.MatchString("webhook test message[.] Please ignore", res.Description)
+	if match {
+		res.Controller = "Omada Webhook Test"
+		if len(res.Text) == 0 {
+			res.Text = append(res.Text, res.Description)
+		}
+		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", time.Now()))
+	} else {
+		// Convert timestamp to human readable string and append it to the slice of texts as another line of text
+		// as the timestamp is microseconds since the unix epoch, not that well readable.
+		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", timestampToHumanReadable(res.Timestamp)))
+	}
 
 	return sendToGotify(gotifyURL, applicationToken, res)
 }
