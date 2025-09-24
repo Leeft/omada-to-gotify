@@ -1,0 +1,61 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  release:
+    types:
+      - published
+
+permissions: {}
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        os: [linux, windows]
+        
+    steps:
+    
+    - uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.x'
+        
+    - name: Install dependencies
+      run: |
+        go get .
+        
+    - name: Build [windows]
+      if: matrix.os == 'windows'
+      run: |
+        CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify.exe webhook.go
+        zip -9q omada-to-gotify-$os-amd64.zip omada-to-gotify.exe LICENSE
+        rm omada-to-gotify.exe
+        printf "sha256: %s\n" "$(shasum -a 256 omada-to-gotify-$os-amd64.zip)"
+      env:
+        os: ${{ matrix.os }}
+
+    - name: Build [linux]
+      if: matrix.os == 'linux'
+      run: |
+        CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -ldflags="-s -w -X 'main.version=$(git describe --tags)'" -trimpath -o omada-to-gotify webhook.go
+        tar -I 'gzip -9' -cf omada-to-gotify-$os-amd64.tar.gz omada-to-gotify LICENSE
+        rm omada-to-gotify
+        printf "sha256: %s\n" "$(shasum -a 256 omada-to-gotify-$os-amd64.tar.gz)"
+      env:
+        os: ${{ matrix.os }}
+        
+#    - name: Test
+#      run: go test -v ./...
