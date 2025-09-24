@@ -7,6 +7,8 @@ import (
 	"github.com/leeft/omada-to-gotify/webhook"
 )
 
+var version = "development"
+
 func main() {
 	gotifyURL := os.Getenv("GOTIFY_URL")
 	if gotifyURL == "" {
@@ -27,6 +29,8 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+	log.Printf("omada-to-gotify %s server starting on port %s ...", version, port)
 
 	webhook.WebhookServer(sharedSecret, gotifyURL, applicationToken, port)
 }

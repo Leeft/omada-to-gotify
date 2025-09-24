@@ -49,7 +49,6 @@ func WebhookServer(sharedSecret, gotifyURL, applicationToken, port string) {
 		fmt.Fprintf(w, "") // or something like: "Webhook forwarded successfully" (Omada doesn't care though)
 	})
 
-	log.Printf("Server starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
