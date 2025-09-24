@@ -1,2 +1,5 @@
 example*.json
 gotify.kra
+omada-to-gotify
+*.swp
+*.swo
