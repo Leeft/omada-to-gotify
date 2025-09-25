@@ -49,13 +49,17 @@ func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
 		if len(res.Text) == 0 {
 			res.Text = append(res.Text, res.Description)
 		}
-		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", time.Now()))
+		if res.Timestamp != 0 {
+			res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", TimestampToHumanReadable(res.Timestamp)))
+		} else {
+			res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", time.Now()))
+		}
 		res.Priority = 0
 		log.Println("Message is detected to be an Omada test webhook message, and processed as such")
 	} else {
 		// Convert timestamp to human readable string and append it to the slice of texts as another line of text
 		// as the timestamp is microseconds since the unix epoch, not that well readable.
-		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", timestampToHumanReadable(res.Timestamp)))
+		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", TimestampToHumanReadable(res.Timestamp)))
 
 		// Priority 4 seems to be the lowest priority that pops off a notification, so I shall use
 		// that as the default for every non-test message. It can be lowered or raised for other
@@ -68,7 +72,7 @@ func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
 	return &res, nil
 }
 
-func timestampToHumanReadable(timestamp int64) string {
+func TimestampToHumanReadable(timestamp int64) string {
 	seconds := timestamp / 1000
 	return fmt.Sprintf("%v", time.Unix(seconds, 0))
 }
