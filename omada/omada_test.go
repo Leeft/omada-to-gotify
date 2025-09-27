@@ -1,16 +1,18 @@
-package omada
+package omada_test
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/leeft/omada-to-gotify/omada"
 )
 
 func TestParseOmadaMessage(t *testing.T) {
 	tests := []struct {
 		name    string
 		body    []byte
-		want    *OmadaMessage
+		want    *omada.OmadaMessage
 		wantErr bool
 	}{
 		{
@@ -25,7 +27,7 @@ func TestParseOmadaMessage(t *testing.T) {
 				"Controller": "Omada Controller NNNNNN",
 				"timestamp": 1758579713747
 			}`),
-			want: &OmadaMessage{
+			want: &omada.OmadaMessage{
 				Site:        "Test Site",
 				Description: "This is a webhook message from Omada Controller",
 				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total).", "Timestamp: 2025-09-23 00:21:53 +0200 CEST"},
@@ -45,7 +47,7 @@ func TestParseOmadaMessage(t *testing.T) {
 				"timestamp": 1640995200000,
 				"_priority": 3
 			}`),
-			want: &OmadaMessage{
+			want: &omada.OmadaMessage{
 				Site:        "Test Site",
 				Description: "Regular alert message",
 				Text:        []string{"Alert occurred", "Timestamp: 2022-01-01 01:00:00 +0100 CET"},
@@ -66,7 +68,7 @@ func TestParseOmadaMessage(t *testing.T) {
 				"_priority": 3,
 				"shardSecret": "secret123"
 			}`),
-			want: &OmadaMessage{
+			want: &omada.OmadaMessage{
 				Site:        "Another Test Site",
 				Description: "Very regular alert message",
 				Text:        []string{"Timestamp: 2025-09-23 00:21:53 +0200 CEST"},
@@ -80,7 +82,7 @@ func TestParseOmadaMessage(t *testing.T) {
 			// timestamp added manually to the JSON plus supported in code as otherwise this gets really hard to test
 			name: "Omada test message",
 			body: []byte(`{"description":"This is a webhook test message. Please ignore this","shardSecret":"fef97b18-e440-45bc-8826-be957e4dc8f6","timestamp":1358579713747}`),
-			want: &OmadaMessage{
+			want: &omada.OmadaMessage{
 				Site:        "",
 				Description: "This is a webhook test message. Please ignore this",
 				Text:        []string{"This is a webhook test message. Please ignore this", "Timestamp: 2013-01-19 08:15:13 +0100 CET"},
@@ -94,14 +96,14 @@ func TestParseOmadaMessage(t *testing.T) {
 		{
 			name:    "invalid JSON",
 			body:    []byte(`{"invalid": json}`),
-			want:    &OmadaMessage{},
+			want:    &omada.OmadaMessage{},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseOmadaMessage(tt.body)
+			got, err := omada.ParseOmadaMessage(tt.body)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseOmadaMessage() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -133,7 +135,7 @@ func TestTimestampToHumanReadable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := TimestampToHumanReadable(tt.timestamp)
+			got := omada.TimestampToHumanReadable(tt.timestamp)
 			// We can't directly compare time strings due to timezone differences
 			// So we'll parse both and check if they represent the same time
 			//parsedGot, _ := time.Parse(tt.want, got)
@@ -154,7 +156,7 @@ func TestSanitisation(t *testing.T) {
 	}`)
 
 	// Create a test message to ensure the sanitization works correctly
-	msg, err := ParseOmadaMessage(body)
+	msg, err := omada.ParseOmadaMessage(body)
 	if err != nil {
 		t.Fatalf("ParseOmadaMessage failed: %v", err)
 	}
