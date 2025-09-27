@@ -68,6 +68,9 @@ services:
       GOTIFY_URL: http://gotify:80/
       GOTIFY_APP_TOKEN: ${GOTIFY_APP_TOKEN}
       OMADA_SHARED_SECRET: ${OMADA_SHARED_SECRET}
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     ports:
       - "8080:8080"
 
@@ -77,7 +80,7 @@ volumes:
       - "com.example.gotify.description=Persistent volume for the gotify server"
 ```
 
-Note that this will still need you to set up the environment variables in Portainer for both Gotify and this webhook proxy.
+Mounting the timezones volumes like in this example will avoid the timestamps being reported in UTC (remove them if you *do* want UTC timestamps). Aslo, you will need you to set up the environment variables in Portainer for both Gotify and this webhook proxy.
 
 ## Future
 
