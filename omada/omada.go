@@ -24,58 +24,113 @@ type OmadaMessage struct {
 	Priority    int      `json:"_priority"` // Assume TP-Link will not add this field
 }
 
+/*
+ * Definitions for the types of messages this code will recognise and
+ * label or treat as such.
+ */
+
+type OmadaMessageType int
+
+const (
+	UnrecognisedMessage OmadaMessageType = iota
+	OmadaTestMessage
+	OmadaOfflineMessage
+	OmadaOnlineMessage
+)
+
+var omadaMessageTypeName = map[OmadaMessageType]string{
+	UnrecognisedMessage: "unrecognised",
+	OmadaTestMessage:    "test",
+	OmadaOfflineMessage: "offline",
+	OmadaOnlineMessage:  "online",
+}
+
+// Priorities were discussed by the Gotify author at:
+// https://github.com/gotify/android/issues/18#issuecomment-437403888
+var messageTypeToPriority = map[OmadaMessageType]int{
+	OmadaTestMessage:    0,  // Test messages are not important
+	UnrecognisedMessage: 4,  // Not specifically recognised, but still make it trigger a notification
+	OmadaOfflineMessage: 10, // Going offline seems important
+	OmadaOnlineMessage:  7,  // Back online is important too, not _as_ important?
+}
+
+// Functions
+
+var shardSecretRe = regexp.MustCompile(`"shardSecret":"([^"]+)"`)
+
 func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
-	res := OmadaMessage{}
-
-	// It can be helpful to log the incoming JSON data for debugging purposes.
-	// But it's not ideal that it has the 'shardSecret' within, so wipe this
-	// from the string. Also, a []byte is not a string yet.
+	// It can be helpful to log the incoming JSON data for debugging purposes
+	// but should one need to share their messages with others it's not ideal
+	// that it has the 'shardSecret' within, so wipe this from the string.
 	sanitised := string(body)
-	re := regexp.MustCompile(`"shardSecret":"([^"]+)"`)
-	sanitised = re.ReplaceAllString(sanitised, `"shardSecret":"****"`)
-
-	// For now, we'll  always log. May have to make this configurable.
+	sanitised = shardSecretRe.ReplaceAllString(sanitised, `"shardSecret":"****"`)
 	log.Printf("Processing incoming message: `%v`", sanitised)
 
-	// Parse the JSON data into the omadaMessage format
+	// Parse the JSON body data into the omadaMessage format, populating res
+	res := OmadaMessage{}
 	if err := json.Unmarshal(body, &res); err != nil {
 		log.Printf("Error decoding the message into the OmadaMessage format structure. Error: %v", err)
 		log.Printf("The message was: %v", sanitised)
 		return &res, err
 	}
 
-	// Special handling for the Omada test message which displays very little otherwise
-	match, _ := regexp.MatchString("webhook test message[.] Please ignore", res.Description)
+	// Get the type of the message by comparing it against known values
+	// and the line. Then set the message priority based on that type.
+	messageType := ParseTypeFromMessage(&res)
+	res.Priority = messageTypeToPriority[messageType]
 
-	if match {
-		res.Controller = "Omada Webhook Test"
-		if len(res.Text) == 0 {
-			res.Text = append(res.Text, res.Description)
-		}
-		if res.Timestamp != 0 {
-			res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", TimestampToHumanReadable(res.Timestamp)))
-		} else {
-			res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", time.Now()))
-		}
-		res.Priority = 0
-		log.Println("Message is detected to be an Omada test webhook message, and processed as such")
-	} else {
-		// Convert timestamp to human readable string and append it to the slice of texts as another line of text
-		// as the timestamp is microseconds since the unix epoch, not that well readable.
-		res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", TimestampToHumanReadable(res.Timestamp)))
+	log.Printf("The message is detected to be of type `%v` and is given priority %v", omadaMessageTypeName[messageType], res.Priority)
 
-		// Priority 4 seems to be the lowest priority that pops off a notification, so I shall use
-		// that as the default for every non-test message. It can be lowered or raised for other
-		// messages in the future.
-		res.Priority = 4
-		// TODO: Change Priority level based on the contents of the notification
-		// log.Println("Message is not a test message")
+	if len(res.Text) == 0 {
+		// The message doesn't have a "text" but it has a "description" so populate the
+		// text field with the description
+		res.Text = append(res.Text, res.Description)
 	}
+
+	switch messageType {
+	case OmadaTestMessage:
+		res.Controller = "Omada Webhook Test"
+	}
+
+	// If there is no timestamp, add one based on the current time.
+	if res.Timestamp == 0 {
+		res.Timestamp = time.Now().UnixMilli()
+		log.Printf("Message is missing a timestamp; inserted current msec epoch of %v", res.Timestamp)
+	}
+
+	// Convert the timestamp to human readable string and append it to the slice
+	// of texts as another line of text as the timestamp given in messages is
+	// microseconds since the unix epoch, not _that_ well readable for humans.
+	res.Text = append(res.Text, fmt.Sprintf("Timestamp: %v", TimestampToHumanReadable(res.Timestamp)))
 
 	return &res, nil
 }
 
+var isATestMessage = regexp.MustCompile(`webhook test message[.] Please ignore`)
+var wasOnline = regexp.MustCompile(`The online detection result of \[.+\] was online`)
+var wasOffline = regexp.MustCompile(`The online detection result of \[.+\] was offline`)
+
+func ParseTypeFromMessage(msg *OmadaMessage) OmadaMessageType {
+	if isATestMessage.MatchString(msg.Description) {
+		return OmadaTestMessage
+	}
+
+	for _, text := range msg.Text {
+		if wasOffline.MatchString(text) {
+			return OmadaOfflineMessage
+		}
+
+		if wasOnline.MatchString(text) {
+			return OmadaOnlineMessage
+		}
+	}
+
+	// No idea what it is, so return that type
+	return UnrecognisedMessage
+}
+
 // BuildMessageBody converts an OmadaMessage into a Go API Client MessageExternal.
+// The Time field is expected to be in a millisecond epoch.
 func BuildMessageBody(notification *OmadaMessage) *models.MessageExternal {
 
 	stamp := time.Unix(notification.Timestamp/1000, notification.Timestamp%1000)
@@ -88,6 +143,8 @@ func BuildMessageBody(notification *OmadaMessage) *models.MessageExternal {
 	}
 }
 
+// How the string is formatted exactly will depend on the OS, possibly environment
+// variables and whether timezone data is available.
 func TimestampToHumanReadable(timestamp int64) string {
 	seconds := timestamp / 1000
 	return fmt.Sprintf("%v", time.Unix(seconds, 0))

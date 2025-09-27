@@ -9,6 +9,8 @@ import (
 )
 
 func TestParseOmadaMessage(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+
 	tests := []struct {
 		name    string
 		body    []byte
@@ -71,7 +73,7 @@ func TestParseOmadaMessage(t *testing.T) {
 			want: &omada.OmadaMessage{
 				Site:        "Another Test Site",
 				Description: "Very regular alert message",
-				Text:        []string{"Timestamp: 2025-09-22 22:21:53 +0000 UTC"},
+				Text:        []string{"Very regular alert message", "Timestamp: 2025-09-22 22:21:53 +0000 UTC"},
 				Controller:  "Another Controller",
 				Timestamp:   1758579713747,
 				Priority:    4,
@@ -116,6 +118,8 @@ func TestParseOmadaMessage(t *testing.T) {
 }
 
 func TestTimestampToHumanReadable(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+
 	tests := []struct {
 		name      string
 		timestamp int64
@@ -150,6 +154,8 @@ func TestTimestampToHumanReadable(t *testing.T) {
 }
 
 func TestBuildMessageBody(t *testing.T) {
+	t.Setenv("TZ", "UTC")
+
 	// Test case 1: Normal message
 	normalMessage := &omada.OmadaMessage{
 		Controller: "Test Controller",
@@ -225,6 +231,64 @@ func TestSanitisation(t *testing.T) {
 			!containsSecret(string(jsonBytes))) {
 			t.Logf("Sanitization worked correctly")
 		}
+	}
+}
+
+func TestParseTypeFromMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		msg      *omada.OmadaMessage
+		expected omada.OmadaMessageType
+	}{
+		{
+			name: "Test message",
+			msg: &omada.OmadaMessage{
+				Description: "This is a webhook test message. Please ignore this",
+				Text:        []string{"Some text"},
+			},
+			expected: omada.OmadaTestMessage,
+		},
+		{
+			name: "Offline message",
+			msg: &omada.OmadaMessage{
+				Description: "Device offline",
+				Text:        []string{"The online detection result of [2.5G WAN1] was offline"},
+			},
+			expected: omada.OmadaOfflineMessage,
+		},
+		{
+			name: "Online message",
+			msg: &omada.OmadaMessage{
+				Description: "Device online",
+				Text:        []string{"The online detection result of [2.5G WAN1] was online."},
+			},
+			expected: omada.OmadaOnlineMessage,
+		},
+		{
+			name: "Unrecognised message",
+			msg: &omada.OmadaMessage{
+				Description: "Unknown message type",
+				Text:        []string{"Some random text"},
+			},
+			expected: omada.UnrecognisedMessage,
+		},
+		{
+			name: "Empty message",
+			msg: &omada.OmadaMessage{
+				Description: "",
+				Text:        []string{},
+			},
+			expected: omada.UnrecognisedMessage,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := omada.ParseTypeFromMessage(tt.msg)
+			if result != tt.expected {
+				t.Errorf("ParseTypeFromMessage() = %v, want %v", result, tt.expected)
+			}
+		})
 	}
 }
 
