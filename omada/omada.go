@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/gotify/go-api-client/v2/models"
 )
 
 // The data structure for the JSON incoming from the Omada Controller webhook;
@@ -70,6 +73,19 @@ func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
 	}
 
 	return &res, nil
+}
+
+// BuildMessageBody converts an OmadaMessage into a Go API Client MessageExternal.
+func BuildMessageBody(notification *OmadaMessage) *models.MessageExternal {
+
+	stamp := time.Unix(notification.Timestamp/1000, notification.Timestamp%1000)
+
+	return &models.MessageExternal{
+		Title:    fmt.Sprintf("%v: %v", notification.Controller, notification.Site),
+		Message:  strings.Join(notification.Text, "\n"),
+		Date:     time.Time(stamp),
+		Priority: notification.Priority,
+	}
 }
 
 func TimestampToHumanReadable(timestamp int64) string {

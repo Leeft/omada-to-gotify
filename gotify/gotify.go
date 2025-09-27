@@ -1,18 +1,14 @@
 package gotify
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
-	"time"
 
 	"github.com/gotify/go-api-client/v2/auth"
 	"github.com/gotify/go-api-client/v2/client/message"
 	"github.com/gotify/go-api-client/v2/gotify"
 	"github.com/gotify/go-api-client/v2/models"
-	"github.com/leeft/omada-to-gotify/omada"
 )
 
 // SendToGotify sends a message to the Gotify server using the provided URL and
@@ -26,7 +22,8 @@ import (
 //
 // If successful, it prints a confirmation message and returns nil. If there's
 // an error during client creation or message sending, it logs the error and returns the error.
-func SendToGotify(gotifyURL, applicationToken string, notification *omada.OmadaMessage) error {
+func SendToGotify(gotifyURL, applicationToken string, notifyMessage *models.MessageExternal) error {
+
 	myURL, _ := url.Parse(gotifyURL)
 
 	// This code sets up a new client as per the example of the gotify supplied go client;
@@ -39,14 +36,7 @@ func SendToGotify(gotifyURL, applicationToken string, notification *omada.OmadaM
 
 	params := message.NewCreateMessageParams()
 
-	stamp := time.Unix(notification.Timestamp/1000, notification.Timestamp%1000)
-
-	params.Body = &models.MessageExternal{
-		Title:    fmt.Sprintf("%v: %v", notification.Controller, notification.Site),
-		Message:  strings.Join(notification.Text, "\n"),
-		Date:     time.Time(stamp),
-		Priority: notification.Priority,
-	}
+	params.Body = notifyMessage
 
 	_, err := client.Message.CreateMessage(params, auth.TokenAuth(applicationToken))
 	if err != nil {

@@ -38,7 +38,9 @@ func WebhookServer(sharedSecret, gotifyURL, applicationToken, port string) {
 			return
 		}
 
-		err = gotify.SendToGotify(gotifyURL, applicationToken, omada_message)
+		notifyMessage := omada.BuildMessageBody(omada_message)
+
+		err = gotify.SendToGotify(gotifyURL, applicationToken, notifyMessage)
 		if err != nil {
 			log.Printf("Error sending message to Gotify: %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
