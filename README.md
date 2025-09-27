@@ -41,7 +41,7 @@ At the moment there are no delivery retries should delivery fail, but each time 
 
 ### docker
 
-I've published a miniscule docker image `shiari/omada-to-gotify` at [Docker Hub](https://hub.docker.com/repository/docker/shiari/omada-to-gotify/general).
+I've published a miniscule docker image `shiari/omada-to-gotify` at [Docker Hub](https://hub.docker.com/r/shiari/omada-to-gotify).
 
 ### docker-compose
 
