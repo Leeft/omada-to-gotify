@@ -30,7 +30,7 @@ func TestParseOmadaMessage(t *testing.T) {
 			want: &omada.OmadaMessage{
 				Site:        "Test Site",
 				Description: "This is a webhook message from Omada Controller",
-				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total).", "Timestamp: 2025-09-23 00:21:53 +0200 CEST"},
+				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total).", "Timestamp: 2025-09-22 22:21:53 +0000 UTC"},
 				Controller:  "Omada Controller NNNNNN",
 				Timestamp:   1758579713747,
 				Priority:    4,
@@ -50,7 +50,7 @@ func TestParseOmadaMessage(t *testing.T) {
 			want: &omada.OmadaMessage{
 				Site:        "Test Site",
 				Description: "Regular alert message",
-				Text:        []string{"Alert occurred", "Timestamp: 2022-01-01 01:00:00 +0100 CET"},
+				Text:        []string{"Alert occurred", "Timestamp: 2022-01-01 00:00:00 +0000 UTC"},
 				Controller:  "Test Controller",
 				Timestamp:   1640995200000,
 				Priority:    4,
@@ -71,7 +71,7 @@ func TestParseOmadaMessage(t *testing.T) {
 			want: &omada.OmadaMessage{
 				Site:        "Another Test Site",
 				Description: "Very regular alert message",
-				Text:        []string{"Timestamp: 2025-09-23 00:21:53 +0200 CEST"},
+				Text:        []string{"Timestamp: 2025-09-22 22:21:53 +0000 UTC"},
 				Controller:  "Another Controller",
 				Timestamp:   1758579713747,
 				Priority:    4,
@@ -80,12 +80,12 @@ func TestParseOmadaMessage(t *testing.T) {
 		},
 		{
 			// timestamp added manually to the JSON plus supported in code as otherwise this gets really hard to test
-			name: "Omada test message",
+			name: "Omada_test_message",
 			body: []byte(`{"description":"This is a webhook test message. Please ignore this","shardSecret":"fef97b18-e440-45bc-8826-be957e4dc8f6","timestamp":1358579713747}`),
 			want: &omada.OmadaMessage{
 				Site:        "",
 				Description: "This is a webhook test message. Please ignore this",
-				Text:        []string{"This is a webhook test message. Please ignore this", "Timestamp: 2013-01-19 08:15:13 +0100 CET"},
+				Text:        []string{"This is a webhook test message. Please ignore this", "Timestamp: 2013-01-19 07:15:13 +0000 UTC"},
 				Controller:  "Omada Webhook Test",
 				Timestamp:   1358579713747,
 				Priority:    0,
@@ -124,12 +124,12 @@ func TestTimestampToHumanReadable(t *testing.T) {
 		{
 			name:      "timestamp with microseconds",
 			timestamp: 1640995200000,
-			want:      "2022-01-01 01:00:00 +0100 CET",
+			want:      "2022-01-01 00:00:00 +0000 UTC",
 		},
 		{
 			name:      "timestamp zero",
 			timestamp: 0,
-			want:      "1970-01-01 01:00:00 +0100 CET",
+			want:      "1970-01-01 00:00:00 +0000 UTC",
 		},
 	}
 

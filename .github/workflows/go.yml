@@ -38,7 +38,7 @@ jobs:
         go get .
 
     - name: Run all tests recursively and verbosely
-      run: go test -v ./... 
+      run: TZ=UTC go test -v ./... 
 
     - name: Build [windows]
       if: matrix.os == 'windows'
