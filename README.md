@@ -85,7 +85,7 @@ Possible additions to come (and feel free to contribute).
 
 - Improving the instructions further, maybe also provide a basic LXC setup script.
 - Specific support for more types of events from the Omada Controller, such as setting a different priority based on message contents or doing more to augment the information given. Some initial work is done towards this now though.
-- Automated tests. Right now there aren't _any_ tests.
+- More automated tests. Right now there are only partial tests.
 - MacOS support? I've got no way to test it works on MacOS, but I'll take pull requests for it if someone needs that. Then we'll blame you for any problems from then on. :wink:
 
 ## LICENSE
