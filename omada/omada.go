@@ -133,12 +133,10 @@ func ParseTypeFromMessage(msg *OmadaMessage) OmadaMessageType {
 // The Time field is expected to be in a millisecond epoch.
 func BuildMessageBody(notification *OmadaMessage) *models.MessageExternal {
 
-	stamp := time.Unix(notification.Timestamp/1000, notification.Timestamp%1000)
-
 	return &models.MessageExternal{
 		Title:    fmt.Sprintf("%v: %v", notification.Controller, notification.Site),
 		Message:  strings.Join(notification.Text, "\n"),
-		Date:     time.Time(stamp),
+		Date:     time.Time(time.Unix(notification.Timestamp/1000, notification.Timestamp%1000)),
 		Priority: notification.Priority,
 	}
 }
