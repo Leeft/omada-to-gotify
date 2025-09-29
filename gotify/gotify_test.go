@@ -1,63 +1,153 @@
 package gotify_test
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
+	"log"
 	"testing"
-	"time"
 
+	"github.com/go-openapi/runtime"
+	"github.com/gotify/go-api-client/v2/client"
+	"github.com/gotify/go-api-client/v2/client/message"
 	"github.com/leeft/omada-to-gotify/gotify"
 	"github.com/leeft/omada-to-gotify/omada"
 )
 
-func TestBuildMessageBody(t *testing.T) {
-	t.Setenv("TZ", "UTC")
+// Types to mock the gotify API client out from the Send() call
+// so that Send() can be tested safely here.
 
-	// Test case 1: Normal message
+type GotifyClientMessageMock struct {
+	Calls       int
+	returnError error
+}
 
-	normalMessage := &omada.OmadaMessage{
-		Controller: "Test Controller",
-		Site:       "Test Site",
-		Text:       []string{"Test message 1", "Test message 2"},
-		Timestamp:  1609459200000, // 2021-01-01 00:00:00 UTC in milliseconds
+func (mock *GotifyClientMessageMock) CreateMessage(params *message.CreateMessageParams, authInfo runtime.ClientAuthInfoWriter) (*message.CreateMessageOK, error) {
+	mock.Calls += 1
+	return nil, mock.returnError
+}
+
+// For the TestGotifyClient_Send test the payload doesn't really matter much
+// as it's the behaviour of the integration we care about (not the underlying
+// implementation of the gotify client API).
+func TestGotifyClient_Send(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		cl      gotify.GotifyClientMessage
+		payload *omada.OmadaMessage
+		calls   int
+		wantErr bool
+	}{
+		{
+			name: "valid message",
+			payload: &omada.OmadaMessage{
+				Site:        "Test Site",
+				Description: "This is a webhook message from Omada Controller",
+				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total)."},
+				Controller:  "Omada Controller NNNNNN",
+				Timestamp:   1758579713747,
+			},
+			calls:   1,
+			wantErr: false,
+		},
+		{
+			name: "valid message but inducing some artificial error",
+			payload: &omada.OmadaMessage{
+				Site:        "Test Site",
+				Description: "This is a webhook message from Omada Controller",
+				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total)."},
+				Controller:  "Omada Controller NNNNNN",
+				Timestamp:   1758579713747,
+			},
+			calls:   1,
+			wantErr: true,
+		},
 	}
 
-	result := gotify.BuildMessageBody(normalMessage)
-	expectedTitle := "Test Controller: Test Site"
-	expectedMessage := fmt.Sprintf("Test message 1\nTest message 2\nTimestamp: %v", time.UnixMilli(1609459200000))
-	expectedPriority := 4
+	for _, tt := range tests {
+		var (
+			buf    bytes.Buffer
+			logger = log.New(&buf, "logger: ", log.Lshortfile)
+		)
 
-	if result.Title != expectedTitle {
-		t.Errorf("Expected title '%s', got '%s'", expectedTitle, result.Title)
-	}
+		t.Run(tt.name, func(t *testing.T) {
 
-	if result.Message != expectedMessage {
-		t.Errorf("Expected message '%s', got '%s'", expectedMessage, result.Message)
-	}
+			cl := gotify.GotifyClient{
+				GotifyURL: "http://localhost:8081",
+				Token:     "doesnotmatter",
+				Logger:    logger,
+			}
 
-	if result.Priority != expectedPriority {
-		t.Errorf("Expected priority %d, got %d", expectedPriority, result.Priority)
-	}
+			mock := &GotifyClientMessageMock{}
 
-	// Test case 2: "Test" message sent from the UI; it doesn't have a timestamp attached.
-	testMessage := &omada.OmadaMessage{
-		Controller:  "Omada Webhook Test",
-		Site:        "Test Site",
-		Description: "webhook test message. Please ignore",
-		Text:        []string{"Test message 1"},
-	}
+			if tt.wantErr {
+				mock.returnError = errors.New("test induced error")
+			}
 
-	result2 := gotify.BuildMessageBody(testMessage)
-	expectedTitle2 := "Omada Webhook Test: Test Site"
-	expectedMessage2 := "Test message 1"
-	expectedPriority2 := 0
+			gotErr := cl.Send(mock, tt.payload)
 
-	if result2.Title != expectedTitle2 {
-		t.Errorf("Expected title '%s', got '%s'", expectedTitle2, result2.Title)
-	}
-	if result2.Message != expectedMessage2 {
-		t.Errorf("Expected message '%s', got '%s'", expectedMessage2, result2.Message)
-	}
-	if result2.Priority != expectedPriority2 {
-		t.Errorf("Expected priority %d, got %d", expectedPriority2, result2.Priority)
+			if mock.Calls != tt.calls {
+				t.Fatalf("Expected %d calls to have been made to the mocked method but got %d", tt.calls, mock.Calls)
+			} else {
+				t.Logf("%d calls were made to the mocked method", mock.Calls)
+			}
+
+			// Possible TODO: check the logging took place.
+
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("Send() failed: %v", gotErr)
+				} else {
+					t.Logf("Send() correctly returned an error `%v`", gotErr)
+				}
+
+				return
+			}
+
+			if tt.wantErr {
+				t.Fatal("Send() succeeded unexpectedly")
+			}
+		})
 	}
 }
+
+func TestGotifyClient_Client(t *testing.T) {
+
+	// I know, with one test it doesn't NEED to be a loop. But who knows
+	// what the code will look like months or years from now.
+
+	tests := []struct {
+		name string // description of this test case
+		want *client.GotifyREST
+	}{
+		{
+			name: "Test client creation",
+		},
+	}
+
+	for _, tt := range tests {
+		var (
+			buf    bytes.Buffer
+			logger = log.New(&buf, "logger: ", log.Lshortfile)
+		)
+
+		gcl := gotify.GotifyClient{
+			GotifyURL: "http://localhost:8081",
+			Token:     "doesnotmatter",
+			Logger:    logger,
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: construct the receiver type.
+			got := gcl.Client()
+
+			if got != nil {
+				t.Logf("Got a client %v", got)
+			} else {
+				t.Fatal("Client() returned nil")
+			}
+		})
+	}
+}
+
+// EOF

@@ -4,3 +4,4 @@ omada-to-gotify
 *.swp
 *.swo
 gotest
+cover.out
