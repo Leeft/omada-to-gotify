@@ -2,27 +2,31 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
+	"github.com/leeft/omada-to-gotify/gotify"
 	"github.com/leeft/omada-to-gotify/webhook"
 )
 
 var version = "development"
 
 func main() {
+	logger := log.Default()
+
 	gotifyURL := os.Getenv("GOTIFY_URL")
 	if gotifyURL == "" {
-		log.Fatal("GOTIFY_URL environment variable is required")
+		logger.Fatal("GOTIFY_URL environment variable is required")
 	}
 
 	applicationToken := os.Getenv("GOTIFY_APP_TOKEN")
 	if applicationToken == "" {
-		log.Fatal("GOTIFY_APP_TOKEN environment variable is required")
+		logger.Fatal("GOTIFY_APP_TOKEN environment variable is required")
 	}
 
 	sharedSecret := os.Getenv("OMADA_SHARED_SECRET")
 	if sharedSecret == "" {
-		log.Fatal("OMADA_SHARED_SECRET environment variable is required")
+		logger.Fatal("OMADA_SHARED_SECRET environment variable is required")
 	}
 
 	port := os.Getenv("PORT")
@@ -30,9 +34,22 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("omada-to-gotify %s server starting on port %s ...", version, port)
+	gotifyClient := gotify.GotifyClient{
+		GotifyURL: gotifyURL,
+		Token:     applicationToken,
+		Logger:    logger,
+	}
 
-	webhook.WebhookServer(sharedSecret, gotifyURL, applicationToken, port)
+	server := &webhook.WebhookServer{
+		GotifyClient:     gotifyClient,
+		GotifyRESTClient: gotifyClient.Client(),
+		SharedSecret:     sharedSecret,
+		Logger:           logger,
+	}
+
+	logger.Printf("omada-to-gotify %s server starting on port %s ...", version, port)
+
+	logger.Fatal(http.ListenAndServe(":"+port, server))
 }
 
 // EOF
