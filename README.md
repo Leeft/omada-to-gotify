@@ -87,8 +87,7 @@ Mounting the timezones volumes like in this example will avoid the timestamps be
 Possible additions to come (and feel free to contribute).
 
 - Improving the instructions further, maybe also provide a basic LXC setup script.
-- Specific support for more types of events from the Omada Controller, such as setting a different priority based on message contents or doing more to augment the information given. Some initial work is done towards this now though and particularly network offline and online notifications should be detected and given high priority.
-- More automated tests. Right now there are only partial tests (it gets hard to test network handling code).
+- Specific support for more types of events from the Omada Controller, such as setting a different priority based on message contents or doing more to augment the information given, like adding code formatting tags around IP addresses and MAC-addresses. Some initial work is done towards this now though and network offline and online notifications should be detected and given high priority.
 - MacOS support? I've got no way to test it works on MacOS, but I'll take pull requests for it if someone needs that. Then we'll blame you for any problems from then on. :wink:
 
 ## LICENSE
