@@ -41,10 +41,10 @@ func main() {
 	}
 
 	server := &webhook.WebhookServer{
-		GotifyClient:     gotifyClient,
-		GotifyRESTClient: gotifyClient.Client(),
-		SharedSecret:     sharedSecret,
-		Logger:           logger,
+		GotifyClient:        gotifyClient,
+		GotifyClientMessage: gotifyClient.Client().Message,
+		SharedSecret:        sharedSecret,
+		Logger:              logger,
 	}
 
 	logger.Printf("omada-to-gotify %s server starting on port %s ...", version, port)

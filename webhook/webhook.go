@@ -6,16 +6,15 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gotify/go-api-client/v2/client"
 	"github.com/leeft/omada-to-gotify/gotify"
 	"github.com/leeft/omada-to-gotify/omada"
 )
 
 type WebhookServer struct {
-	GotifyClient     gotify.GotifyClient
-	GotifyRESTClient *client.GotifyREST
-	SharedSecret     string
-	Logger           *log.Logger
+	GotifyClient        gotify.GotifyClient
+	GotifyClientMessage gotify.GotifyClientMessage
+	SharedSecret        string
+	Logger              *log.Logger
 }
 
 func (ws *WebhookServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +45,7 @@ func (ws *WebhookServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// method for it plus it would seem the notifications are sent sporadically anyway
 	// so this should be okay.
 
-	err = ws.GotifyClient.Send(ws.GotifyRESTClient.Message, omadaMessage)
+	err = ws.GotifyClient.Send(ws.GotifyClientMessage, omadaMessage)
 
 	if err != nil {
 		ws.Logger.Printf("Error sending message to Gotify: %v", err)
