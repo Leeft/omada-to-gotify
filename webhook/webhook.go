@@ -17,6 +17,8 @@ type WebhookRequest struct {
 }
 
 func WebhookServer(sharedSecret, gotifyURL, applicationToken, port string) {
+	logger := log.Default()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -31,9 +33,9 @@ func WebhookServer(sharedSecret, gotifyURL, applicationToken, port string) {
 			return
 		}
 
-		omada_message, err := omada.ParseOmadaMessage(body)
+		omada_message, err := omada.ParseOmadaMessage(logger, body)
 		if err != nil || omada_message == nil {
-			log.Printf("Error parsing Omada notification message: %v", err)
+			logger.Printf("Error parsing Omada notification message: %v", err)
 			http.Error(w, "Internal message parsing error", http.StatusInternalServerError)
 			return
 		}
@@ -42,7 +44,7 @@ func WebhookServer(sharedSecret, gotifyURL, applicationToken, port string) {
 
 		err = gotify.SendToGotify(gotifyURL, applicationToken, notifyMessage)
 		if err != nil {
-			log.Printf("Error sending message to Gotify: %v", err)
+			logger.Printf("Error sending message to Gotify: %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -51,7 +53,7 @@ func WebhookServer(sharedSecret, gotifyURL, applicationToken, port string) {
 		fmt.Fprintf(w, "") // or something like: "Webhook forwarded successfully" (Omada doesn't care though)
 	})
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	logger.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
 // EOF

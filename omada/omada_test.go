@@ -1,8 +1,10 @@
 package omada_test
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -277,30 +279,29 @@ func TestTypeOmadaMessage(t *testing.T) {
 // }
 
 func TestSanitisation(t *testing.T) {
-	body := []byte(`{"description": "test","shardSecret": "secret123"}`)
+	// `shardSecret` (not my typo) is probably mostly harmless to be logged, but
+	// we should still avoid logging it verbatim. Test that this happens in the
+	// logging of ParseOmadaMessage.
+	body := []byte(`{"description": "Sanitise this", "shardSecret":    "secret123"}`)
+
+	var (
+		buf    bytes.Buffer
+		logger = log.New(&buf, "logger: ", log.Lshortfile)
+	)
 
 	// Create a test message to ensure the sanitization works correctly
-	msg, err := omada.ParseOmadaMessage(body)
+	_, err := omada.ParseOmadaMessage(logger, body)
 	if err != nil {
 		t.Fatalf("ParseOmadaMessage failed: %v", err)
 	}
 
-	// Ensure the shardSecret is properly sanitized in the JSON output
-	jsonBytes, err := json.Marshal(msg)
-	if err != nil {
-		t.Fatalf("JSON marshal failed: %v", err)
-	}
+	logged := buf.String()
 
 	// Verify that shardSecret doesn't appear in the output
-	if string(jsonBytes) == `{"Site":"","Description":"test","Text":null,"Controller":"","Timestamp":0,"Priority":0}` {
-		// This is expected behavior since we're only testing sanitization
-		// The actual sanitization happens in the log output, not in the parsed struct
+	if strings.Contains(logged, `shardSecret`) && !strings.Contains(logged, `"shardSecret":"****"`) {
+		t.Fatalf("shardSecret` should not be logged; got `%v`", logged)
 	} else {
-		// Just verify it doesn't contain the raw secret
-		if string(jsonBytes) != "" && (string(jsonBytes) == `{"Site":"","Description":"test","Text":null,"Controller":"","Timestamp":0,"Priority":0}` ||
-			!containsSecret(string(jsonBytes))) {
-			t.Logf("Sanitization worked correctly")
-		}
+		t.Logf("shardSecret` was sanitized correctly; got `%v`", logged)
 	}
 }
 

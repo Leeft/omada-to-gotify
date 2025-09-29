@@ -113,25 +113,25 @@ func (msg OmadaMessage) Priority() int {
 
 // Functions
 
-var shardSecretRe = regexp.MustCompile(`"shardSecret":"([^"]+)"`)
+var shardSecretRe = regexp.MustCompile(`"shardSecret":\s*"([^"]+)"`)
 
-func ParseOmadaMessage(body []byte) (*OmadaMessage, error) {
+func ParseOmadaMessage(out *log.Logger, body []byte) (*OmadaMessage, error) {
 	// It can be helpful to log the incoming JSON data for debugging purposes
 	// but should one need to share their messages with others it's not ideal
 	// that it has the 'shardSecret' within, so wipe this from the string.
 	sanitised := string(body)
 	sanitised = shardSecretRe.ReplaceAllString(sanitised, `"shardSecret":"****"`)
-	log.Printf("Processing incoming message: `%v`", sanitised)
+	out.Printf("Processing incoming message: `%v`", sanitised)
 
 	// Parse the JSON body data into the omadaMessage format, populating res
 	res := OmadaMessage{}
 	if err := json.Unmarshal(body, &res); err != nil {
-		log.Printf("Error decoding the message into the OmadaMessage format structure. Error: %v", err)
-		log.Printf("The message was: %v", sanitised)
+		out.Printf("Error decoding the message into the OmadaMessage format structure. Error: %v", err)
+		out.Printf("The message was: %v", sanitised)
 		return &res, err
 	}
 
-	log.Printf("The message is detected to be of type `%v` and is given priority %v", omadaMessageTypeName[res.Type()], res.Priority())
+	out.Printf("The message is detected to be of type `%v` and is given priority %v", omadaMessageTypeName[res.Type()], res.Priority())
 
 	return &res, nil
 }
