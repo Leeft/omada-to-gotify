@@ -9,7 +9,18 @@ import (
 	"github.com/gotify/go-api-client/v2/client/message"
 	"github.com/gotify/go-api-client/v2/gotify"
 	"github.com/gotify/go-api-client/v2/models"
+	"github.com/leeft/omada-to-gotify/omada"
 )
+
+// BuildMessageBody takes an OmadaMessage and turns it into a Gotify API Client MessageExternal.
+func BuildMessageBody(msg *omada.OmadaMessage) *models.MessageExternal {
+	return &models.MessageExternal{
+		Title:    msg.Title(),
+		Message:  msg.Body(),
+		Date:     msg.Date(),
+		Priority: msg.Priority(),
+	}
+}
 
 // SendToGotify sends a message to the Gotify server using the provided URL and
 // application token. It initializes a Gotify client, then attempts to send a JSON
