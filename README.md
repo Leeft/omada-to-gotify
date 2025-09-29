@@ -80,14 +80,14 @@ volumes:
       - "com.example.gotify.description=Persistent volume for the gotify server"
 ```
 
-Mounting the timezones volumes like in this example will avoid the timestamps being reported in UTC (remove them if you *do* want UTC timestamps). Aslo, you will need you to set up the environment variables in Portainer for both Gotify and this webhook proxy.
+Mounting the timezones volumes like in this example will avoid the timestamps being reported in UTC (remove them if you *do* want UTC timestamps). Also, you will need you to set up the environment variables in Portainer for both Gotify and this webhook proxy.
 
 ## Future
 
 Possible additions to come (and feel free to contribute).
 
 - Improving the instructions further, maybe also provide a basic LXC setup script.
-- Specific support for more types of events from the Omada Controller, such as setting a different priority based on message contents or doing more to augment the information given, like adding code formatting tags around IP addresses and MAC-addresses. Some initial work is done towards this now though and network offline and online notifications should be detected and given high priority.
+- Specific support for more types of events from the Omada Controller, such as setting a different priority based on message contents or doing more to augment the information given, like adding code formatting tags around IP addresses and MAC-addresses. Some initial work is done towards this now though and network offline and online notifications should be detected and given high priority. Send me examples from your console output if you want me to help with these.
 - MacOS support? I've got no way to test it works on MacOS, but I'll take pull requests for it if someone needs that. Then we'll blame you for any problems from then on. :wink:
 
 ## LICENSE
