@@ -2,7 +2,10 @@ module github.com/leeft/omada-to-gotify
 
 go 1.25.1
 
-require github.com/gotify/go-api-client/v2 v2.0.4
+require (
+	github.com/go-test/deep v1.1.1
+	github.com/gotify/go-api-client/v2 v2.0.4
+)
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect

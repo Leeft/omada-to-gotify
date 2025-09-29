@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/leeft/omada-to-gotify/omada"
 )
 
@@ -169,114 +170,129 @@ func TestTypeOmadaMessage(t *testing.T) {
 	}
 }
 
-// func TestParseOmadaMessage(t *testing.T) {
-// 	t.Setenv("TZ", "UTC")
+func TestParseOmadaMessage(t *testing.T) {
+	t.Setenv("TZ", "UTC")
 
-// 	tests := []struct {
-// 		name    string
-// 		body    []byte
-// 		want    *omada.OmadaMessage
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "valid message with test description",
-// 			body: []byte(`{
-// 				"Site": "Test Site",
-// 				"description": "This is a webhook message from Omada Controller",
-// 				"shardSecret": "xxyyzz",
-// 				"text": [
-// 					"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total)."
-// 				],
-// 				"Controller": "Omada Controller NNNNNN",
-// 				"timestamp": 1758579713747
-// 			}`),
-// 			want: &omada.OmadaMessage{
-// 				Site:        "Test Site",
-// 				Description: "This is a webhook message from Omada Controller",
-// 				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total).", "Timestamp: 2025-09-22 22:21:53 +0000 UTC"},
-// 				Controller:  "Omada Controller NNNNNN",
-// 				Timestamp:   1758579713747,
-// 				Priority:    4,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "valid message with regular description",
-// 			body: []byte(`{
-// 				"Site": "Test Site",
-// 				"description": "Regular alert message",
-// 				"text": ["Alert occurred"],
-// 				"Controller": "Test Controller",
-// 				"timestamp": 1640995200000,
-// 				"_priority": 3
-// 			}`),
-// 			want: &omada.OmadaMessage{
-// 				Site:        "Test Site",
-// 				Description: "Regular alert message",
-// 				Text:        []string{"Alert occurred", "Timestamp: 2022-01-01 00:00:00 +0000 UTC"},
-// 				Controller:  "Test Controller",
-// 				Timestamp:   1640995200000,
-// 				Priority:    4,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "message with shardSecret",
-// 			body: []byte(`{
-// 				"Site": "Another Test Site",
-// 				"description": "Very regular alert message",
-// 				"text": [],
-// 				"Controller": "Another Controller",
-// 				"timestamp": 1758579713747,
-// 				"_priority": 3,
-// 				"shardSecret": "secret123"
-// 			}`),
-// 			want: &omada.OmadaMessage{
-// 				Site:        "Another Test Site",
-// 				Description: "Very regular alert message",
-// 				Text:        []string{"Very regular alert message", "Timestamp: 2025-09-22 22:21:53 +0000 UTC"},
-// 				Controller:  "Another Controller",
-// 				Timestamp:   1758579713747,
-// 				Priority:    4,
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			// timestamp added manually to the JSON plus supported in code as otherwise this gets really hard to test
-// 			name: "Omada_test_message",
-// 			body: []byte(`{"description":"This is a webhook test message. Please ignore this","shardSecret":"fef97b18-e440-45bc-8826-be957e4dc8f6","timestamp":1358579713747}`),
-// 			want: &omada.OmadaMessage{
-// 				Site:        "",
-// 				Description: "This is a webhook test message. Please ignore this",
-// 				Text:        []string{"This is a webhook test message. Please ignore this", "Timestamp: 2013-01-19 07:15:13 +0000 UTC"},
-// 				Controller:  "Omada Webhook Test",
-// 				Timestamp:   1358579713747,
-// 				Priority:    0,
-// 			},
-// 			wantErr: false,
-// 		},
+	tests := []struct {
+		name    string
+		body    []byte
+		want    *omada.OmadaMessage
+		wantErr bool
+	}{
+		{
+			name: "valid message with test description",
+			body: []byte(`{
+				"Site": "Test Site",
+				"description": "This is a webhook message from Omada Controller",
+				"shardSecret": "xxyyzz",
+				"text": [
+					"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total)."
+				],
+				"Controller": "Omada Controller NNNNNN",
+				"timestamp": 1758579713747
+			}`),
+			want: &omada.OmadaMessage{
+				Site:        "Test Site",
+				Description: "This is a webhook message from Omada Controller",
+				Text:        []string{"The controller failed to send site logs to 192.168.10.11 automatically (1 logs in total)."},
+				Controller:  "Omada Controller NNNNNN",
+				Timestamp:   1758579713747,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid message with regular description",
+			body: []byte(`{
+				"Site": "Test Site",
+				"description": "Regular alert message",
+				"text": ["Alert occurred"],
+				"Controller": "Test Controller",
+				"timestamp": 1640995200000,
+				"_priority": 3
+			}`),
+			want: &omada.OmadaMessage{
+				Site:        "Test Site",
+				Description: "Regular alert message",
+				Text:        []string{"Alert occurred"},
+				Controller:  "Test Controller",
+				Timestamp:   1640995200000,
+			},
+			wantErr: false,
+		},
+		{
+			name: "message with shardSecret",
+			body: []byte(`{
+				"Site": "Another Test Site",
+				"description": "Very regular alert message",
+				"text": [],
+				"Controller": "Another Controller",
+				"timestamp": 1758579713747,
+				"_priority": 3,
+				"shardSecret": "secret123"
+			}`),
+			want: &omada.OmadaMessage{
+				Controller:  "Another Controller",
+				Site:        "Another Test Site",
+				Description: "Very regular alert message",
+				Text:        []string{},
+				Timestamp:   1758579713747,
+			},
+			wantErr: false,
+		},
+		{
+			// timestamp added manually to the JSON plus supported in code as otherwise this gets really hard to test
+			name: "Omada_test_message",
+			body: []byte(`{"description":"This is a webhook test message. Please ignore this","shardSecret":"fef97b18-e440-45bc-8826-be957e4dc8f6"}`),
+			want: &omada.OmadaMessage{
+				Description: "This is a webhook test message. Please ignore this",
+				Text:        nil,
+			},
+			wantErr: false,
+		},
 
-// 		{
-// 			name:    "invalid JSON",
-// 			body:    []byte(`{"invalid": json}`),
-// 			want:    &omada.OmadaMessage{},
-// 			wantErr: true,
-// 		},
-// 	}
+		{
+			name:    "invalid JSON",
+			body:    []byte(`{"invalid": json}`),
+			want:    &omada.OmadaMessage{},
+			wantErr: true,
+		},
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := omada.ParseOmadaMessage(tt.body)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("ParseOmadaMessage() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("ParseOmadaMessage() got = `%v`, want `%v`", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+	for _, tt := range tests {
+		var (
+			buf    bytes.Buffer
+			logger = log.New(&buf, "logger: ", log.Lshortfile)
+		)
+
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := omada.ParseOmadaMessage(logger, tt.body)
+
+			logged := buf.String()
+
+			if !strings.Contains(logged, `Processing incoming message:`) {
+				t.Errorf("logger output does not contain incoming message: %s", logged)
+			} else {
+				t.Logf("logger output contains incoming message: %s", logged)
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseOmadaMessage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			diff := deep.Equal(got, tt.want)
+			if diff != nil {
+				t.Errorf("ParseOmadaMessage() test failed: %v", diff)
+			}
+
+			if !tt.wantErr && !strings.Contains(logged, `The message is detected to be of type`) {
+				t.Errorf("logger output does not contain info about the detection: %s", logged)
+			} else {
+				t.Logf("logger output contains info about the detection: %s", logged)
+			}
+		})
+	}
+}
 
 func TestSanitisation(t *testing.T) {
 	// `shardSecret` (not my typo) is probably mostly harmless to be logged, but

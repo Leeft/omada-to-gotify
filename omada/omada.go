@@ -121,6 +121,7 @@ func ParseOmadaMessage(out *log.Logger, body []byte) (*OmadaMessage, error) {
 	// that it has the 'shardSecret' within, so wipe this from the string.
 	sanitised := string(body)
 	sanitised = shardSecretRe.ReplaceAllString(sanitised, `"shardSecret":"****"`)
+
 	out.Printf("Processing incoming message: `%v`", sanitised)
 
 	// Parse the JSON body data into the omadaMessage format, populating res
