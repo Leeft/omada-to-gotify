@@ -78,7 +78,7 @@ func (msg OmadaMessage) Date() time.Time {
 	if msg.Timestamp <= 0 {
 		return time.Now()
 	}
-	//return time.Time(time.Unix(msg.Timestamp/1000, msg.Timestamp%1000))
+
 	return time.Time(time.UnixMilli(msg.Timestamp))
 }
 

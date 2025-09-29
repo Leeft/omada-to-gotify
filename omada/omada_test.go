@@ -380,3 +380,47 @@ func TestParseTypeFromMessage(t *testing.T) {
 }
 
 // EOF
+
+func TestOmadaMessage_Title(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		body []byte
+		want string
+	}{
+		{
+			name: `Basic title`,
+			body: []byte(`{"controller":"Test Controller","site":"Test Site"}`),
+			want: "Test Controller: Test Site",
+		},
+		{
+			name: `Site missing`,
+			body: []byte(`{"controller":"Test Controller"}`),
+			want: "Test Controller: ",
+		},
+		{
+			name: `Title for test message`,
+			body: []byte(`{"description":"This is a webhook test message. Please ignore this"}`),
+			want: "Omada Webhook Test: ",
+		},
+	}
+	for _, tt := range tests {
+		var (
+			buf bytes.Buffer
+			out = log.New(&buf, "logger: ", log.Lshortfile)
+		)
+
+		t.Run(tt.name, func(t *testing.T) {
+			msg, err := omada.ParseOmadaMessage(out, tt.body)
+
+			if err != nil {
+				t.Fatalf("could not construct receiver type: %v", err)
+			}
+
+			got := msg.Title()
+
+			if got != tt.want {
+				t.Errorf("Title() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
