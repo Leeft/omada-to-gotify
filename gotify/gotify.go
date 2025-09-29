@@ -44,9 +44,7 @@ func SendToGotify(gotifyURL, applicationToken string, notifyMessage *models.Mess
 	// so this should be okay.
 
 	client := gotify.NewClient(myURL, &http.Client{})
-
 	params := message.NewCreateMessageParams()
-
 	params.Body = notifyMessage
 
 	_, err := client.Message.CreateMessage(params, auth.TokenAuth(applicationToken))
