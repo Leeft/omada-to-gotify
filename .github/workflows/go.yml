@@ -26,6 +26,7 @@ jobs:
     env:
       REGISTRY: index.docker.io
       IMAGE_NAME: ${{ github.repository }}
+      DOCKER_IMAGE: shiari/omada-to-gotify
     strategy:
       matrix:
         os: [linux, windows]
@@ -120,7 +121,7 @@ jobs:
       uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
       if: github.ref_type == 'tag' && matrix.os == 'linux'
       with:
-        images: ${{ env.IMAGE_NAME }}
+        images: ${{ env.DOCKER_IMAGE }}
 
     - name: Build and push Docker image
       id: push
@@ -136,6 +137,6 @@ jobs:
       uses: actions/attest-build-provenance@v3
       if: github.ref_type == 'tag' && matrix.os == 'linux'
       with:
-        subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        subject-name: ${{ env.REGISTRY }}/${{ env.DOCKER_IMAGE }}
         subject-digest: ${{ steps.push.outputs.digest }}
         push-to-registry: true
