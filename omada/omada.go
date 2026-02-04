@@ -21,22 +21,25 @@ const (
 	OmadaTestMessage
 	OmadaOfflineMessage
 	OmadaOnlineMessage
+	RadarDetectedMessage
 )
 
 var omadaMessageTypeName = map[OmadaMessageType]string{
-	UnrecognisedMessage: "unrecognised",
-	OmadaTestMessage:    "test",
-	OmadaOfflineMessage: "offline",
-	OmadaOnlineMessage:  "online",
+	UnrecognisedMessage:  "unrecognised",
+	OmadaTestMessage:     "test",
+	OmadaOfflineMessage:  "offline",
+	OmadaOnlineMessage:   "online",
+	RadarDetectedMessage: "radar-detected",
 }
 
 // Priorities were discussed by the Gotify author at:
 // https://github.com/gotify/android/issues/18#issuecomment-437403888
 var messageTypeToPriority = map[OmadaMessageType]int{
-	OmadaTestMessage:    0,  // Test messages are not important
-	UnrecognisedMessage: 4,  // Not specifically recognised, but still make it trigger a notification
-	OmadaOfflineMessage: 10, // Going offline seems important
-	OmadaOnlineMessage:  7,  // Back online is important too, not _as_ important?
+	OmadaTestMessage:     0,  // Test messages are not important
+	UnrecognisedMessage:  4,  // Not specifically recognised, but still make it trigger a notification
+	OmadaOfflineMessage:  10, // Going offline seems important
+	OmadaOnlineMessage:   7,  // Back online is important too, not _as_ important?
+	RadarDetectedMessage: 6,  // Medium importance
 }
 
 // OmadaMessage type and methods
@@ -140,6 +143,7 @@ func ParseOmadaMessage(out *log.Logger, body []byte) (*OmadaMessage, error) {
 var isATestMessage = regexp.MustCompile(`webhook test message[.] Please ignore`)
 var wasOnline = regexp.MustCompile(`The online detection result of \[.+\] was online`)
 var wasOffline = regexp.MustCompile(`The online detection result of \[.+\] was offline`)
+var radarDetected = regexp.MustCompile(`detected radar on channel [0-9]+`)
 
 // Inspect the given message and return what type the message
 // is expected to be based on its findings.
@@ -155,6 +159,10 @@ func parseTypeFromMessage(msg *OmadaMessage) OmadaMessageType {
 
 		if wasOnline.MatchString(text) {
 			return OmadaOnlineMessage
+		}
+
+		if radarDetected.MatchString(text) {
+			return RadarDetectedMessage
 		}
 	}
 

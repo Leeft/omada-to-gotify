@@ -90,6 +90,24 @@ func TestTypeOmadaMessage(t *testing.T) {
 			},
 		},
 		{
+			name: "Radar detected message under TP-Link 6.x",
+			message: &omada.OmadaMessage{
+				Controller: "Omada_Controller 3",
+				Site:       "Airport Site",
+				Text: []string{
+					"[ap:Main AP:3C-64-CF-7E-09-AC] detected radar on channel 52.",
+				},
+				Timestamp: 1765644834549,
+			},
+			want: &omadaMessageMethodValues{
+				Title:    "Omada_Controller 3: Airport Site",
+				Body:     fmt.Sprintf("[ap:Main AP:3C-64-CF-7E-09-AC] detected radar on channel 52.\nTimestamp: %v", omada.HumanReadableTimestamp(time.UnixMilli(1765644834549))),
+				Priority: 6,
+				Date:     time.UnixMilli(1765644834549),
+				Type:     omada.RadarDetectedMessage,
+			},
+		},
+		{
 			// Test messages sent by Omada do not have a timestamp, and do not have
 			// the regular message body (just the description) so this tests that the
 			// timestamp is left out, and that the body is just the description.

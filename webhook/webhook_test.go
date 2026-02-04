@@ -117,7 +117,42 @@ func TestWebhookServer(t *testing.T) {
 	}
 
 	t.Run("Authenticated with a correct access token header", func(t *testing.T) {
+		mock.Calls = 0
+
 		json := []byte(`{"Site":"Some site","description":"This is a webhook message from Omada Controller","shardSecret":"fef97b18-e440-45bc-8826-be957e4dc8f6","text":["[2.5G WAN1] of [gateway:98-03-8E-3A-8D-53] is down.\r","[gateway:98-03-8E-3A-8D-53]: The online detection result of [2.5G WAN1] was offline.\r"],"Controller":"Omada Controller_347044","timestamp":1758852904877}`)
+		body := bytes.NewReader(json)
+
+		request, _ := http.NewRequest(http.MethodPost, "/", body)
+
+		request.Header.Set("Access_token", server.SharedSecret) // CORRECT
+
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		got := response.Result().Status
+		want := "200 OK"
+
+		if got != want {
+			t.Errorf("Expected status code to be `%s`, but got `%s`", want, got)
+		}
+
+		got = response.Body.String()
+		want = ""
+
+		if got != want {
+			t.Errorf("Got %q, want %q", got, want)
+		}
+
+		if mock.Calls != 1 {
+			t.Errorf("Expected GotifyClientMessage to be called once, but it was called %d times", mock.Calls)
+		}
+	})
+
+	t.Run("Authenticated radar detected message TP-Link 6.x", func(t *testing.T) {
+		mock.Calls = 0
+
+		json := []byte(`{"Site":"This Site","description":"This is a webhook message from Omada Controller","shardSecret":"fef97b18-e440-45bc-8826-be957e4dc8f6","text":["[ap:Main AP:3C-64-CF-7E-09-AC] detected radar on channel 52."],"Controller":"Omada Controller_347044","timestamp":1765644834549}`)
 		body := bytes.NewReader(json)
 
 		request, _ := http.NewRequest(http.MethodPost, "/", body)
