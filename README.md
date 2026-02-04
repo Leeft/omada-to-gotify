@@ -73,6 +73,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - "8080:8080"
+    restart: always
 
 volumes:
   gotify_data:
