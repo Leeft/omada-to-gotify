@@ -22,7 +22,8 @@ func main() {
 
 	logger.Printf("omada-to-gotify %s server starting on port %s ...", version, port)
 
-	logger.Fatal(http.ListenAndServe(":"+port, server))
+	err = http.ListenAndServe(":"+port, server)
+	logger.Fatal(err.Error())
 }
 
 func InitMain(logger *log.Logger) (gc gotify.GotifyClient, s *webhook.WebhookServer, p string, err error) {
