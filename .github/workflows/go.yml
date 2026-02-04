@@ -20,6 +20,9 @@ jobs:
     runs-on: [self-hosted,ubuntu-latest]
     permissions:
       contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     strategy:
       matrix:
         os: [linux, windows]
